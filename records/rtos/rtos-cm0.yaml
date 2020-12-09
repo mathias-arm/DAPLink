@@ -28,6 +28,10 @@ tool_specific:
         sources:
             rtos:
                 - source/rtos/RTX/Source/ARM/irq_cm0.s
+    make_armclang:
+        sources:
+            rtos:
+                - source/rtos/RTX/Source/ARM/irq_cm0.s
     make_gcc_arm:
         sources:
                 - source/rtos/RTX/Source/GCC/irq_cm0.S
