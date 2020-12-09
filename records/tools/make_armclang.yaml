@@ -24,17 +24,19 @@ tool_specific:
                 - -funsigned-char
                 - -masm=auto
                 - -nostdlib
+                - -Wall
+                - -Wno-error=cpp
                 - -Warmcc-pragma-thumb
+                - -Wno-ignored-optimization-argument
+                - -Wno-unused-command-line-argument
             ld_flags:
                 - --bestdebug
                 - --summary_stderr
                 - --info=summarysizes,sizes,totals,unused,veneers
-                - --map
                 - --load_addr_map_info
                 - --xref
                 - --callgraph
                 - --symbols
-                - --list "$@.map"
             pre_build_script:
                 - tools/pre_build_script.sh
             post_build_script:
