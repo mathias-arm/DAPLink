@@ -22,16 +22,10 @@ tool_specific:
             hic_hal:
                 - source/hic_hal/nxp/lpc11u35/armcc
     make_armcc:
-        misc:
-            ld_flags:
-                - --predefine="-Isource\hic_hal\nxp\lpc11u35"
         sources:
             hic_hal:
                 - source/hic_hal/nxp/lpc11u35/armcc
     make_armclang:
-        misc:
-            ld_flags:
-                - --predefine="-Isource\hic_hal\nxp\lpc11u35"
         sources:
             hic_hal:
                 - source/hic_hal/nxp/lpc11u35/armcc
