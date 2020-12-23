@@ -19,9 +19,11 @@
  * limitations under the License.
  */
 
+#include "rt_TypeDef.h"
 #include "cmsis_os2.h"
-#include "RTL.h"
 #include "cortex_m.h"
+
+typedef uint32_t OS_MUT[4];
 
 #define MAIN_TASK_PRIORITY      (10)
 #define MAIN_TASK_STACK         (800)
@@ -42,6 +44,28 @@ osStatus_t osKernelInitialize(void)
     taskCount = 0;
     return osOK;
 }
+
+#include "rt_Event.h"
+#include "rt_Mutex.h"
+#include "rt_Task.h"
+#include "rt_Time.h"
+
+#define os_sys_init_user(tsk,prio,stk,size) \
+                                      rt_sys_init(tsk,prio|(size<<8),stk)
+#define os_tsk_create(tsk,prio)       rt_tsk_create(tsk,prio,NULL,NULL)
+#define os_tsk_create_user(tsk,prio,stk,size) \
+                                      rt_tsk_create(tsk,prio|(size<<8),stk,NULL)
+#define os_tsk_self()                 rt_tsk_self()
+#define os_mut_init(mutex)            rt_mut_init(mutex)
+#define os_mut_release(mutex)         rt_mut_release(mutex)
+#define os_mut_wait(mutex,timeout)    rt_mut_wait(mutex,timeout)
+#define os_evt_set(evt_flags,task_id) rt_evt_set(evt_flags,task_id)
+#define os_itv_wait()                 rt_itv_wait()
+#define os_itv_set(interval_time)     rt_itv_set(interval_time)
+#define os_evt_wait_or(wflags,tmo)    rt_evt_wait(wflags,tmo,__FALSE)
+#define os_evt_get()                  rt_evt_get()
+#define os_time_get()                 rt_time_get()
+#define os_dly_wait(delay_time)       rt_dly_wait(delay_time)
 
 osThreadId_t osThreadNew(osThreadFunc_t func, void *argument, const osThreadAttr_t *attr)
 {

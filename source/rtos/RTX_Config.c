@@ -19,9 +19,15 @@
  * limitations under the License.
  */
 
-#include "RTL.h"
-#include "util.h"
+#include "rt_TypeDef.h"
+#include "cmsis_os.h"
 #include "cortex_m.h"
+#include "util.h"
+
+#define OS_ERR_STK_OVF          1U
+#define OS_ERR_FIFO_OVF         2U
+#define OS_ERR_MBX_OVF          3U
+#define OS_ERR_TIMER_OVF        4U
 
 /*----------------------------------------------------------------------------
  *      RTX User configuration part BEGIN
@@ -36,7 +42,7 @@
 //   <i> Define max. number of tasks that will run at the same time.
 //   <i> Default: 6
 #ifndef OS_TASKCNT
-#define OS_TASKCNT    4
+#define OS_TASKCNT    5
 // Threads with user provided stacks:
 // -serial_process
 // -hid_process
@@ -49,7 +55,7 @@
 //   <i> The memory space for the stack is provided by the user.
 //   <i> Default: 0
 #ifndef OS_PRIVCNT
-#define OS_PRIVCNT     OS_TASKCNT
+#define OS_PRIVCNT     OS_TASKCNT - 1
 // All tasks use private stacks (aside from background thread)
 #endif
 
@@ -60,6 +66,20 @@
 #define OS_STKSIZE     34
 // Used by:
 // -os_idle_demon
+#endif
+
+//   <o>Main Thread stack size [bytes] <64-32768:8><#/4>
+//   <i> Defines stack size for main thread.
+//   <i> Default: 200
+#ifndef OS_MAINSTKSIZE
+ #define OS_MAINSTKSIZE 50      // this stack size value is in words
+#endif
+
+//   <o>Total stack size [bytes] for threads with user-provided stack size <0-1048576:8><#/4>
+//   <i> Defines the combined stack size for threads with user-provided stack size.
+//   <i> Default: 0
+#ifndef OS_PRIVSTKSIZE
+ #define OS_PRIVSTKSIZE 0       // this stack size value is in words
 #endif
 
 // <q>Check for the stack overflow
@@ -178,7 +198,7 @@ void os_tmr_call(U16 info)
 
 /*--------------------------- os_error --------------------------------------*/
 
-void os_error(U32 err_code)
+__NO_RETURN void os_error(uint32_t err_code)
 {
     /* This function is called when a runtime error is detected. Parameter */
     /* 'err_code' holds the runtime error code (defined in RTL.H).         */
@@ -210,7 +230,7 @@ void os_error(U32 err_code)
  *      RTX Configuration Functions
  *---------------------------------------------------------------------------*/
 
-#include "RTX_lib.c"
+#include "RTX_CM_lib.h"
 
 /*----------------------------------------------------------------------------
  * end of file
