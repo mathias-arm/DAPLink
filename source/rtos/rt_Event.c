@@ -1,23 +1,27 @@
-/**
- * @file    rt_Event.c
- * @brief   
+/*----------------------------------------------------------------------------
+ *      CMSIS-RTOS  -  RTX
+ *----------------------------------------------------------------------------
+ *      Name:    RT_EVENT.C
+ *      Purpose: Implements waits and wake-ups for event flags
+ *      Rev.:    V4.79
+ *----------------------------------------------------------------------------
  *
- * DAPLink Interface Firmware
- * Copyright (c) 2009-2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 1999-2009 KEIL, 2009-2017 ARM Germany GmbH. All rights reserved.
+ *
  * SPDX-License-Identifier: Apache-2.0
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * Licensed under the Apache License, Version 2.0 (the License); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *---------------------------------------------------------------------------*/
 
 #include "rt_TypeDef.h"
 #include "RTX_Config.h"
@@ -25,6 +29,7 @@
 #include "rt_Event.h"
 #include "rt_List.h"
 #include "rt_Task.h"
+#include "rt_HAL_CM.h"
 
 
 /*----------------------------------------------------------------------------
@@ -72,7 +77,7 @@ void rt_evt_set (U16 event_flags, OS_TID task_id) {
   /* Set one or more event flags of a selectable task. */
   P_TCB p_tcb;
 
-  p_tcb = os_active_TCB[task_id-1];
+  p_tcb = os_active_TCB[task_id-1U];
   if (p_tcb == NULL) {
     return;
   }
@@ -92,9 +97,12 @@ void rt_evt_set (U16 event_flags, OS_TID task_id) {
       p_tcb->waits  &= p_tcb->events;
 wkup: p_tcb->events &= ~event_flags;
       rt_rmv_dly (p_tcb);
-      p_tcb->events &= ~event_flags;
       p_tcb->state   = READY;
-      p_tcb->ret_val = OS_R_EVT;
+#ifdef __CMSIS_RTOS
+      rt_ret_val2(p_tcb, 0x08U/*osEventSignal*/, p_tcb->waits);
+#else
+      rt_ret_val (p_tcb, OS_R_EVT);
+#endif
       rt_dispatch (p_tcb);
     }
   }
@@ -106,7 +114,7 @@ wkup: p_tcb->events &= ~event_flags;
 void rt_evt_clr (U16 clear_flags, OS_TID task_id) {
   /* Clear one or more event flags (identified by "clear_flags") of a */
   /* selectable task (identified by "task"). */
-  P_TCB task = os_active_TCB[task_id-1];
+  P_TCB task = os_active_TCB[task_id-1U];
 
   if (task == NULL) {
     return;
@@ -119,7 +127,7 @@ void rt_evt_clr (U16 clear_flags, OS_TID task_id) {
 
 void isr_evt_set (U16 event_flags, OS_TID task_id) {
   /* Same function as "os_evt_set", but to be called by ISRs. */
-  P_TCB p_tcb = os_active_TCB[task_id-1];
+  P_TCB p_tcb = os_active_TCB[task_id-1U];
 
   if (p_tcb == NULL) {
     return;
@@ -158,7 +166,11 @@ void rt_evt_psh (P_TCB p_CB, U16 set_flags) {
 rdy:  p_CB->events &= ~event_flags;
       rt_rmv_dly (p_CB);
       p_CB->state   = READY;
-      p_CB->ret_val = OS_R_EVT;
+#ifdef __CMSIS_RTOS
+      rt_ret_val2(p_CB, 0x08U/*osEventSignal*/, p_CB->waits); 
+#else
+      rt_ret_val (p_CB, OS_R_EVT);
+#endif
       rt_put_prio (&os_rdy, p_CB);
     }
   }

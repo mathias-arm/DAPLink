@@ -1,23 +1,27 @@
-/**
- * @file    rt_Robin.c
- * @brief   
+/*----------------------------------------------------------------------------
+ *      CMSIS-RTOS  -  RTX
+ *----------------------------------------------------------------------------
+ *      Name:    RT_ROBIN.C
+ *      Purpose: Round Robin Task switching
+ *      Rev.:    V4.79
+ *----------------------------------------------------------------------------
  *
- * DAPLink Interface Firmware
- * Copyright (c) 2009-2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 1999-2009 KEIL, 2009-2017 ARM Germany GmbH. All rights reserved.
+ *
  * SPDX-License-Identifier: Apache-2.0
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * Licensed under the Apache License, Version 2.0 (the License); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *---------------------------------------------------------------------------*/
 
 #include "rt_TypeDef.h"
 #include "RTX_Config.h"
@@ -25,7 +29,7 @@
 #include "rt_Task.h"
 #include "rt_Time.h"
 #include "rt_Robin.h"
-#include "cmsis_compiler.h"
+#include "rt_HAL_CM.h"
 
 /*----------------------------------------------------------------------------
  *      Global Variables
@@ -40,7 +44,7 @@ struct OS_ROBIN os_robin;
 
 /*--------------------------- rt_init_robin ---------------------------------*/
 
-__WEAK void rt_init_robin (void) {
+__weak void rt_init_robin (void) {
   /* Initialize Round Robin variables. */
   os_robin.task = NULL;
   os_robin.tout = (U16)os_rrobin;
@@ -48,14 +52,14 @@ __WEAK void rt_init_robin (void) {
 
 /*--------------------------- rt_chk_robin ----------------------------------*/
 
-__WEAK void rt_chk_robin (void) {
+__weak void rt_chk_robin (void) {
   /* Check if Round Robin timeout expired and switch to the next ready task.*/
   P_TCB p_new;
 
   if (os_robin.task != os_rdy.p_lnk) {
     /* New task was suspended, reset Round Robin timeout. */
     os_robin.task = os_rdy.p_lnk;
-    os_robin.time = (U16)os_time + os_robin.tout - 1;
+    os_robin.time = (U16)os_time + os_robin.tout - 1U;
   }
   if (os_robin.time == (U16)os_time) {
     /* Round Robin timeout has expired, swap Robin tasks. */
@@ -68,4 +72,3 @@ __WEAK void rt_chk_robin (void) {
 /*----------------------------------------------------------------------------
  * end of file
  *---------------------------------------------------------------------------*/
-

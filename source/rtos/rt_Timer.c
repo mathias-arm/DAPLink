@@ -1,28 +1,34 @@
-/**
- * @file    rt_Timer.c
- * @brief   
+/*----------------------------------------------------------------------------
+ *      CMSIS-RTOS  -  RTX
+ *----------------------------------------------------------------------------
+ *      Name:    RT_TIMER.C
+ *      Purpose: User timer functions
+ *      Rev.:    V4.70
+ *----------------------------------------------------------------------------
  *
- * DAPLink Interface Firmware
- * Copyright (c) 2009-2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 1999-2009 KEIL, 2009-2017 ARM Germany GmbH. All rights reserved.
+ *
  * SPDX-License-Identifier: Apache-2.0
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * Licensed under the Apache License, Version 2.0 (the License); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *---------------------------------------------------------------------------*/
 
 #include "rt_TypeDef.h"
 #include "RTX_Config.h"
 #include "rt_Timer.h"
 #include "rt_MemBox.h"
+
+#ifndef __CMSIS_RTOS
 
 
 /*----------------------------------------------------------------------------
@@ -47,7 +53,7 @@ void rt_tmr_tick (void) {
     return;
   }
   os_tmr.tcnt--;
-  while (os_tmr.tcnt == 0 && (p = os_tmr.next) != NULL) {
+  while ((os_tmr.tcnt == 0U) && ((p = os_tmr.next) != NULL)) {
     /* Call a user provided function to handle an elapsed timer */
     os_tmr_call (p->info);
     os_tmr.tcnt = p->tcnt;
@@ -65,7 +71,7 @@ OS_ID rt_tmr_create (U16 tcnt, U16 info)  {
   P_TMR p_tmr, p;
   U32 delta,itcnt = tcnt;
 
-  if (tcnt == 0 || m_tmr == NULL)  {
+  if ((tcnt == 0U) || (m_tmr == NULL)) {
     return (NULL);
   }
   p_tmr = rt_alloc_box ((U32 *)m_tmr);
@@ -75,7 +81,7 @@ OS_ID rt_tmr_create (U16 tcnt, U16 info)  {
   p_tmr->info = info;
   p = (P_TMR)&os_tmr;
   delta = p->tcnt;
-  while (delta < itcnt && p->next != NULL) {
+  while ((delta < itcnt) && (p->next != NULL)) {
     p = p->next;
     delta += p->tcnt;
   }
@@ -110,6 +116,9 @@ OS_ID rt_tmr_kill (OS_ID timer)  {
   /* Timer killed */
   return (NULL);
 }
+
+
+#endif
 
 /*----------------------------------------------------------------------------
  * end of file

@@ -1,23 +1,27 @@
-/**
- * @file    rt_Semaphore.c
- * @brief   
+/*----------------------------------------------------------------------------
+ *      CMSIS-RTOS  -  RTX
+ *----------------------------------------------------------------------------
+ *      Name:    RT_SEMAPHORE.C
+ *      Purpose: Implements binary and counting semaphores
+ *      Rev.:    V4.79
+ *----------------------------------------------------------------------------
  *
- * DAPLink Interface Firmware
- * Copyright (c) 2009-2016, ARM Limited, All Rights Reserved
+ * Copyright (c) 1999-2009 KEIL, 2009-2017 ARM Germany GmbH. All rights reserved.
+ *
  * SPDX-License-Identifier: Apache-2.0
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may
+ * Licensed under the Apache License, Version 2.0 (the License); you may
  * not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * distributed under the License is distributed on an AS IS BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *---------------------------------------------------------------------------*/
 
 #include "rt_TypeDef.h"
 #include "RTX_Config.h"
@@ -25,6 +29,7 @@
 #include "rt_List.h"
 #include "rt_Task.h"
 #include "rt_Semaphore.h"
+#include "rt_HAL_CM.h"
 
 
 /*----------------------------------------------------------------------------
@@ -44,6 +49,37 @@ void rt_sem_init (OS_ID semaphore, U16 token_count) {
 }
 
 
+/*--------------------------- rt_sem_delete ---------------------------------*/
+
+#ifdef __CMSIS_RTOS
+OS_RESULT rt_sem_delete (OS_ID semaphore) {
+  /* Delete semaphore */
+  P_SCB p_SCB = semaphore;
+  P_TCB p_TCB;
+
+  while (p_SCB->p_lnk != NULL) {
+    /* A task is waiting for token */
+    p_TCB = rt_get_first ((P_XCB)p_SCB);
+    rt_ret_val(p_TCB, 0U);
+    rt_rmv_dly(p_TCB);
+    p_TCB->state = READY;
+    rt_put_prio (&os_rdy, p_TCB);
+  }
+
+  if ((os_rdy.p_lnk != NULL) && (os_rdy.p_lnk->prio > os_tsk.run->prio)) {
+    /* preempt running task */
+    rt_put_prio (&os_rdy, os_tsk.run);
+    os_tsk.run->state = READY;
+    rt_dispatch (NULL);
+  }
+
+  p_SCB->cb_type = 0U;
+
+  return (OS_R_OK);
+}
+#endif
+
+
 /*--------------------------- rt_sem_send -----------------------------------*/
 
 OS_RESULT rt_sem_send (OS_ID semaphore) {
@@ -54,10 +90,13 @@ OS_RESULT rt_sem_send (OS_ID semaphore) {
   if (p_SCB->p_lnk != NULL) {
     /* A task is waiting for token */
     p_TCB = rt_get_first ((P_XCB)p_SCB);
-    p_TCB->ret_val = OS_R_SEM;
+#ifdef __CMSIS_RTOS
+    rt_ret_val(p_TCB, 1U);
+#else
+    rt_ret_val(p_TCB, OS_R_SEM);
+#endif
     rt_rmv_dly (p_TCB);
     rt_dispatch (p_TCB);
-    os_tsk.run->ret_val = OS_R_OK;
   }
   else {
     /* Store token. */
@@ -78,7 +117,7 @@ OS_RESULT rt_sem_wait (OS_ID semaphore, U16 timeout) {
     return (OS_R_OK);
   }
   /* No token available: wait for one */
-  if (timeout == 0) {
+  if (timeout == 0U) {
     return (OS_R_TMO);
   }
   if (p_SCB->p_lnk != NULL) {
@@ -97,10 +136,10 @@ OS_RESULT rt_sem_wait (OS_ID semaphore, U16 timeout) {
 /*--------------------------- isr_sem_send ----------------------------------*/
 
 void isr_sem_send (OS_ID semaphore) {
-  /* Same function as "os_sem"send", but to be called by ISRs */
+  /* Same function as "os_sem_send", but to be called by ISRs */
   P_SCB p_SCB = semaphore;
 
-  rt_psq_enq (p_SCB, 0);
+  rt_psq_enq (p_SCB, 0U);
   rt_psh_req ();
 }
 
@@ -116,7 +155,11 @@ void rt_sem_psh (P_SCB p_CB) {
     p_TCB = rt_get_first ((P_XCB)p_CB);
     rt_rmv_dly (p_TCB);
     p_TCB->state   = READY;
-    p_TCB->ret_val = OS_R_SEM;
+#ifdef __CMSIS_RTOS
+    rt_ret_val(p_TCB, 1U);
+#else
+    rt_ret_val(p_TCB, OS_R_SEM);
+#endif
     rt_put_prio (&os_rdy, p_TCB);
   }
   else {
@@ -128,4 +171,3 @@ void rt_sem_psh (P_SCB p_CB) {
 /*----------------------------------------------------------------------------
  * end of file
  *---------------------------------------------------------------------------*/
-
