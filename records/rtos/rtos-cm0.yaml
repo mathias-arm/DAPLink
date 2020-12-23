@@ -1,6 +1,7 @@
 common:
     macros:
         - OS_TICK=10000
+        - __TARGET_ARCH_6S_M
     includes:
         - source/rtos
     sources:
@@ -18,32 +19,25 @@ common:
             - source/rtos/rt_Timer.c
             - source/rtos/RTX_Config.c
             - source/rtos/cmsis_os2_port.c
-            - source/rtos/RTX/Config/RTX_Config.c
-            - source/rtos/RTX/Source/rtx_delay.c
-            - source/rtos/RTX/Source/rtx_kernel.c
-            - source/rtos/RTX/Source/rtx_lib.c
-            - source/rtos/RTX/Source/rtx_memory.c
-            - source/rtos/RTX/Source/rtx_mempool.c
-            - source/rtos/RTX/Source/rtx_msgqueue.c
-            - source/rtos/RTX/Source/rtx_mutex.c
-            - source/rtos/RTX/Source/rtx_system.c
-            - source/rtos/RTX/Source/rtx_thread.c
-            - source/rtos/RTX/Source/rtx_timer.c
-            - source/rtos/Source/os_systick.c
 tool_specific:
     uvision:
         sources:
             rtos:
-                - source/rtos/cm0
+                - source/rtos/ARM/HAL_CM1.c
+                - source/rtos/ARM/SVC_Table.s
     armcc:
         sources:
             rtos:
-                - source/rtos/cm0
+                - source/rtos/ARM/HAL_CM1.c
+                - source/rtos/ARM/SVC_Table.s
     armclang:
         sources:
             rtos:
-                - source/rtos/cm0
+                - source/rtos/ARM/HAL_CM1.c
+                - source/rtos/ARM/SVC_Table.s
     gcc_arm:
         sources:
             rtos:
-                - source/rtos/gcc/cm0
+                - source/rtos/GCC/HAL_CM.c
+                - source/rtos/GCC/HAL_CM0.S
+                - source/rtos/GCC/SVC_Table.s

@@ -19,11 +19,14 @@
  * limitations under the License.
  */
 
+#include "cmsis_compiler.h"
+
 /* Definitions */
 #define INITIAL_xPSR    0x01000000
 #define DEMCR_TRCENA    0x01000000
 #define ITM_ITMENA      0x00000001
 #define MAGIC_WORD      0xE25A2EA5
+#define MAGIC_PATTERN   0xCCCCCCCCU
 
 // ARMCC has deprecated use for ldrex and strex functions
 // from C so do not used them on any devices.
@@ -132,7 +135,7 @@ static inline void rt_svc_init (void) {
 #if (__TARGET_ARCH_6S_M)
   NVIC_SYS_PRI2 |= (NVIC_SYS_PRI3<<(8+1)) & 0xFC000000;
 #else
-  sh       = 8 - __clz (~((NVIC_SYS_PRI3 << 8) & 0xFF000000));
+  sh       = 8 - __CLZ (~((NVIC_SYS_PRI3 << 8) & 0xFF000000));
   prigroup = ((NVIC_AIR_CTRL >> 8) & 0x07);
   if (prigroup >= sh) {
     sh = prigroup + 1;

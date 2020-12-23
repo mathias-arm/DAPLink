@@ -82,14 +82,12 @@ void *rt_alloc_box (void *box_mem) {
   /* Allocate a memory block and return start address. */
   void **free;
 #ifndef __USE_EXCLUSIVE_ACCESS
-  int  irq_dis;
-
-  irq_dis = __disable_irq ();
+  __disable_irq ();
   free = ((P_BM) box_mem)->free;
   if (free) {
     ((P_BM) box_mem)->free = *free;
   }
-  if (!irq_dis) __enable_irq ();
+  __enable_irq ();
 #else
   do {
     if ((free = (void **)__ldrex(&((P_BM) box_mem)->free)) == 0) {
@@ -126,19 +124,16 @@ void *_calloc_box (void *box_mem)  {
 
 int rt_free_box (void *box_mem, void *box) {
   /* Free a memory block, returns 0 if OK, 1 if box does not belong to box_mem */
-#ifndef __USE_EXCLUSIVE_ACCESS
-  int irq_dis;
-#endif
 
   if (box < box_mem || box >= ((P_BM) box_mem)->end) {
     return (1);
   }
 
 #ifndef __USE_EXCLUSIVE_ACCESS
-  irq_dis = __disable_irq ();
+  __disable_irq ();
   *((void **)box) = ((P_BM) box_mem)->free;
   ((P_BM) box_mem)->free = box;
-  if (!irq_dis) __enable_irq ();
+  __enable_irq ();
 #else
   do {
     *((void **)box) = (void *)__ldrex(&((P_BM) box_mem)->free);

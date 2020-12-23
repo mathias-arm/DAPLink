@@ -156,7 +156,7 @@
 
 /*--------------------------- os_idle_demon ---------------------------------*/
 
-__task void os_idle_demon(void)
+__NO_RETURN void os_idle_demon(void)
 {
     /* The idle demon is a system task, running when no other task is ready */
     /* to run. The 'os_xxx' function calls are not allowed from this task.  */

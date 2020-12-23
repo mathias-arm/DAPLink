@@ -49,15 +49,17 @@ static          U8  pend_flags;
 /*----------------------------------------------------------------------------
  *      Global Functions
  *---------------------------------------------------------------------------*/
+#define RL_RTX_VER      0x470
 
+#if defined (__CC_ARM)
 __asm void $$RTX$$version (void) {
    /* Export a version number symbol for a version control. */
 
                 EXPORT  __RL_RTX_VER
 
-__RL_RTX_VER    EQU     0x470
+__RL_RTX_VER    EQU     RL_RTX_VER
 }
-
+#endif
 
 /*--------------------------- rt_suspend ------------------------------------*/
 
@@ -220,7 +222,7 @@ void rt_pop_req (void) {
 
 /*--------------------------- os_tick_init ----------------------------------*/
 
-__weak int os_tick_init (void) {
+__WEAK int os_tick_init (void) {
   /* Initialize SysTick timer as system tick timer. */
   rt_systick_init ();
   return (-1);  /* Return IRQ number of SysTick timer */
@@ -229,7 +231,7 @@ __weak int os_tick_init (void) {
 
 /*--------------------------- os_tick_irqack --------------------------------*/
 
-__weak void os_tick_irqack (void) {
+__WEAK void os_tick_irqack (void) {
   /* Acknowledge timer interrupt. */
 }
 
@@ -260,7 +262,7 @@ void rt_systick (void) {
 
 /*--------------------------- rt_stk_check ----------------------------------*/
 
-__weak void rt_stk_check (void) {
+__WEAK void rt_stk_check (void) {
   /* Check for stack overflow. */
   if ((os_tsk.run->tsk_stack < (U32)os_tsk.run->stack) ||
       (os_tsk.run->stack[0] != MAGIC_WORD)) {

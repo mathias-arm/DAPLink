@@ -19,8 +19,10 @@
  * limitations under the License.
  */
 
+#if defined(__CC_ARM)
 #pragma thumb
 #pragma O3
+#endif
 
 /*----------------------------------------------------------------------------
  *      Definitions
@@ -413,7 +415,7 @@ int _mutex_initialize (OS_ID *mutex) {
 
 /*--------------------------- _mutex_acquire --------------------------------*/
 
-__used void _mutex_acquire (OS_ID *mutex) {
+__USED void _mutex_acquire (OS_ID *mutex) {
   /* Acquire a system mutex, lock stdlib resources. */
   if (runtask_id ()) {
     /* RTX running, acquire a mutex. */
@@ -424,7 +426,7 @@ __used void _mutex_acquire (OS_ID *mutex) {
 
 /*--------------------------- _mutex_release --------------------------------*/
 
-__used void _mutex_release (OS_ID *mutex) {
+__USED void _mutex_release (OS_ID *mutex) {
   /* Release a system mutex, unlock stdlib resources. */
   if (runtask_id ()) {
     /* RTX runnning, release a mutex. */

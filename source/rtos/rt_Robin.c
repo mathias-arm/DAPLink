@@ -25,6 +25,7 @@
 #include "rt_Task.h"
 #include "rt_Time.h"
 #include "rt_Robin.h"
+#include "cmsis_compiler.h"
 
 /*----------------------------------------------------------------------------
  *      Global Variables
@@ -39,7 +40,7 @@ struct OS_ROBIN os_robin;
 
 /*--------------------------- rt_init_robin ---------------------------------*/
 
-__weak void rt_init_robin (void) {
+__WEAK void rt_init_robin (void) {
   /* Initialize Round Robin variables. */
   os_robin.task = NULL;
   os_robin.tout = (U16)os_rrobin;
@@ -47,7 +48,7 @@ __weak void rt_init_robin (void) {
 
 /*--------------------------- rt_chk_robin ----------------------------------*/
 
-__weak void rt_chk_robin (void) {
+__WEAK void rt_chk_robin (void) {
   /* Check if Round Robin timeout expired and switch to the next ready task.*/
   P_TCB p_new;
 

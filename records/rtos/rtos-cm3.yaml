@@ -1,6 +1,7 @@
 common:
     macros:
         - OS_TICK=10000
+        - __TARGET_ARCH_7_M
     includes:
         - source/rtos
     sources:

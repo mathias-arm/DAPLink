@@ -24,11 +24,20 @@
 
 #include <stdint.h>
 
+#if   defined (__CC_ARM)
+#pragma O3
+#define __USED __attribute__((used))
+#elif defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
+#define __USED __attribute__((used))
+#elif defined (__GNUC__)
+#pragma GCC optimize ("O3")
+#define __USED __attribute__((used))
+#elif defined (__ICCARM__)
+#define __USED __root
+#endif
+
 /* RL-ARM version number. */
 #define __RL_ARM_VER    471
-
-#define __task          __declspec(noreturn)
-#define __used          __attribute__((used))
 
 #ifndef NULL
  #ifdef __cplusplus
@@ -201,14 +210,24 @@ extern OS_ID     os_tmr_kill (OS_ID timer);
 /* System Functions */
 extern U32       os_suspend (void);
 extern void      os_resume (U32 sleep_time);
+#if defined(__GNUC__)
+extern void      tsk_lock (void);
+#else
 extern void      tsk_lock (void) __swi (5);
+#endif
 extern void      tsk_unlock (void);
 
 /* Fixed Memory Block Management Functions */
 extern int       _init_box (void *box_mem, U32 box_size, U32 blk_size);
+#if defined(__GNUC__)
+extern void     *_alloc_box (void *box_mem);
+extern void     *_calloc_box (void *box_mem);
+extern int       _free_box (void *box_mem, void *box);
+#else
 extern void     *_alloc_box (void *box_mem) __swi (1);
 extern void     *_calloc_box (void *box_mem);
 extern int       _free_box (void *box_mem, void *box) __swi (2);
+#endif
 
 #else
 
@@ -216,7 +235,11 @@ extern int       _free_box (void *box_mem, void *box) __swi (2);
  *      Functions Cortex-M
  *---------------------------------------------------------------------------*/
 
+#if defined(__GNUC__)
+#define __SVC_0
+#else
 #define __SVC_0         __svc_indirect(0)
+#endif
 
 /* Task Management */
 extern void      os_set_env    (void);
@@ -374,7 +397,6 @@ extern int       _init_box (void *box_mem, U32 box_size, U32 blk_size);
 extern void     *_alloc_box (void *box_mem);
 extern void     *_calloc_box (void *box_mem);
 extern int       _free_box (void *box_mem, void *box);
-
 #endif
 
 #define BOX_ALIGN_8     0x80000000
