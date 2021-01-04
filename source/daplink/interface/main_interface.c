@@ -23,7 +23,6 @@
 #include <stdio.h>
 
 #include "cmsis_os2.h"
-#include "rtx_os.h"
 #include "rl_usb.h"
 #include "main_interface.h"
 #include "gpio.h"
