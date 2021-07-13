@@ -3,7 +3,7 @@
  * @brief   IO Configuration for nrf52820 HIC
  *
  * DAPLink Interface Firmware
- * Copyright (c) 2021 Arm Limited, All Rights Reserved
+ * Copyright (c) 2021, Arm Limited, All Rights Reserved
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -19,6 +19,14 @@
  * limitations under the License.
  */
 
+// Override all defines if IO_CONFIG_OVERRIDE is defined
+#ifdef IO_CONFIG_OVERRIDE
+#include "IO_Config_Override.h"
+#ifndef __IO_CONFIG_H__
+#define __IO_CONFIG_H__
+#endif
+#endif
+
 #ifndef __IO_CONFIG_H__
 #define __IO_CONFIG_H__
 
@@ -26,27 +34,37 @@
 #include "compiler.h"
 #include "daplink.h"
 
+#include "nrf_gpio.h"
+
 // This GPIO configuration is only valid for the nrf52820 HIC
 COMPILER_ASSERT(DAPLINK_HIC_ID == DAPLINK_HIC_ID_NRF52820);
 
-// SWCLK (Output)
-#define PIN_SWCDLK_PORT
-#define PIN_SWCDLK_BIT
+// SWDCLK (Output)
+#define PIN_SWDCLK     NRF_GPIO_PIN_MAP(0, 1)
 
 // SWDIO (Input/Output)
-#define PIN_SWDIO_PORT
-#define PIN_SWDIO_BIT
+#define PIN_SWDIO      NRF_GPIO_PIN_MAP(0, 0)
 
 // nRESET Pin
-#define PIN_nRESET_PORT
-#define PIN_nRESET_BIT
-
-// Connected LED (Output)
-#define LED_CONNECTED_PORT
-#define LED_CONNECTED_BIT
+#undef PIN_nRESET
 
 // Target Running LED (Output)
-#define LED_RUNNING_PORT
-#define LED_RUNNING_BIT
+#undef LED_RUNNING
+
+// Connected LED (Output)
+#undef LED_CONNECTED
+
+// HID LED
+#define LED_HID        NRF_GPIO_PIN_MAP(0, 7)
+
+// MSC LED
+#define LED_MSC        NRF_GPIO_PIN_MAP(0, 7)
+
+// CDC LED
+#define LED_CDC        NRF_GPIO_PIN_MAP(0, 7)
+
+// Reset button (SW_RESET)
+#define RESET_BUTTON      NRF_GPIO_PIN_MAP(0, 6)
+#define RESET_BUTTON_PULL NRF_GPIO_PIN_PULLUP
 
 #endif
