@@ -1,6 +1,6 @@
 /**
  * @file    target_reset.c
- * @brief   Target reset for the MAX32620
+ * @brief   Target reset for the MAX32620 and MAX32630 families
  *
  * DAPLink Interface Firmware
  * Copyright (c) 2009-2019, ARM Limited, All Rights Reserved
@@ -36,7 +36,7 @@
  * is unavailable for 1024 clocks after reset.
  * This code will reset and halt after the SWD lockout period.
  */
-static uint8_t target_set_state_max32620(target_state_t state)
+static uint8_t target_set_state_max3262x(target_state_t state)
 {
     unsigned int halt_timeout, halt_retries = 10;
     unsigned int lockout_delay, i;
@@ -104,8 +104,8 @@ static uint8_t target_set_state_max32620(target_state_t state)
     return 0;
 }
 
-const target_family_descriptor_t g_maxim_max32620 = {
-    .family_id = kMaxim_MAX32620_FamilyID,
-    .target_set_state = target_set_state_max32620,
+const target_family_descriptor_t g_maxim_max3262x = {
+    .family_id = kMaxim_MAX3262X_FamilyID,
+    .target_set_state = target_set_state_max3262x,
     .default_reset_type = kHardwareReset,
 };
