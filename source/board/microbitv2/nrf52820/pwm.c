@@ -20,6 +20,7 @@
  */
 
 #include "pwm.h"
+#include "gpio.h"
 
 void pwm_init()
 {
@@ -38,5 +39,11 @@ void pwm_deinit_pins()
 
 void pwm_set_dutycycle(uint8_t duty)
 {
-    // TODO
+    // This is just a hack to turn off the LED when the duty cycle is low enough
+    // TODO: Actually implement this
+    if (duty < 10) {
+        gpio_clear(GPIO_REG(LED_PWR), GPIO_IDX(LED_PWR));
+    } else {
+        gpio_set(GPIO_REG(LED_PWR), GPIO_IDX(LED_PWR));
+    }
 }
