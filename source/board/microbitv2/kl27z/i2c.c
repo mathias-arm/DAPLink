@@ -34,7 +34,6 @@
 #define I2C_SLAVE_CLK_SRC I2C1_CLK_SRC
 #define I2C_SLAVE_CLK_FREQ CLOCK_GetFreq(I2C1_CLK_SRC)
 
-#define I2C_DATA_LENGTH             (1024U + 8U)
 static uint8_t g_slave_TX_buff[I2C_DATA_LENGTH];
 static uint8_t g_slave_RX_buff[I2C_DATA_LENGTH];
 
