@@ -21,7 +21,7 @@
 
 #include "i2c_commands.h"
 
-void i2c_initialize()
+void i2c_cmds_init()
 {
     // TODO
 }
