@@ -85,9 +85,9 @@ bool do_remount = false;
 
 flashConfig_t gflashConfig = {
     .key = CFG_KEY,
-    .fileName = FLASH_CFG_FILENAME,
-    .fileSize = FLASH_CFG_FILESIZE,
-    .fileVisible = FLASH_CFG_FILEVISIBLE,
+    .fileName = STORAGE_CFG_FILENAME,
+    .fileSize = STORAGE_CFG_FILESIZE,
+    .fileVisible = STORAGE_CFG_FILEVISIBLE,
 };
 
 extern main_usb_connect_t usb_state;
@@ -239,7 +239,7 @@ static void prerun_board_config(void)
 
     // Load Config from Flash if present
     flashConfig_t * pflashConfigROM;
-    pflashConfigROM = (void *)FLASH_CONFIG_ADDRESS;
+    pflashConfigROM = (void *)STORAGE_CONFIG_ADDRESS;
 
     if (CFG_KEY == pflashConfigROM->key) {
         memcpy(&gflashConfig, pflashConfigROM, sizeof(flashConfig_t));
@@ -558,8 +558,8 @@ void vfs_user_build_filesystem_hook() {
 static uint32_t read_file_data_txt(uint32_t sector_offset, uint8_t *data, uint32_t num_sectors)
 {
     // Ignore out of bound reads
-    if ( (FLASH_STORAGE_ADDRESS + VFS_SECTOR_SIZE * sector_offset) < (FLASH_CONFIG_ADDRESS + FLASH_INTERFACE_SIZE) ) {
-        memcpy(data, (uint8_t *) (FLASH_STORAGE_ADDRESS + VFS_SECTOR_SIZE * sector_offset), VFS_SECTOR_SIZE);
+    if ( (STORAGE_ADDRESS_START + VFS_SECTOR_SIZE * sector_offset) < STORAGE_ADDRESS_END ) {
+        memcpy(data, (uint8_t *) (STORAGE_ADDRESS_START + VFS_SECTOR_SIZE * sector_offset), VFS_SECTOR_SIZE);
     }
 
     return VFS_SECTOR_SIZE;
