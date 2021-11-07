@@ -173,6 +173,7 @@ typedef __PACKED_STRUCT i2cFlashCmd_tag {
 
 void i2c_cmds_init(void);
 flashConfig_t* i2c_cmds_get_storage_config(void);
+void i2c_cmds_reset_storate_config(void);
 
 #ifdef __cplusplus
 }
