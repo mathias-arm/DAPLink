@@ -83,13 +83,6 @@ bool automatic_sleep_on = AUTOMATIC_SLEEP_DEFAULT;
 main_shutdown_state_t main_shutdown_state = MAIN_SHUTDOWN_WAITING;
 bool do_remount = false;
 
-flashConfig_t gflashConfig = {
-    .key = CFG_KEY,
-    .fileName = STORAGE_CFG_FILENAME,
-    .fileSize = STORAGE_CFG_FILESIZE,
-    .fileVisible = STORAGE_CFG_FILEVISIBLE,
-};
-
 extern main_usb_connect_t usb_state;
 extern bool go_to_sleep;
 
@@ -236,14 +229,6 @@ static void prerun_board_config(void)
     i2c_cmds_init();
 
     gpio_init_combined_int();
-
-    // Load Config from Flash if present
-    flashConfig_t * pflashConfigROM;
-    pflashConfigROM = (void *)STORAGE_CONFIG_ADDRESS;
-
-    if (CFG_KEY == pflashConfigROM->key) {
-        memcpy(&gflashConfig, pflashConfigROM, sizeof(flashConfig_t));
-    }
 }
 
 // Handle the reset button behavior, this function is called in the main task every 30ms
@@ -512,6 +497,7 @@ bool vfs_user_magic_file_hook(const vfs_filename_t filename, bool *do_remount)
     if (!memcmp(filename, "ERASE   ACT", sizeof(vfs_filename_t))) {
         // Erase last 128KB flash block
         storage_erase_all();
+        i2c_cmds_reset_storate_config();
     }
 
     return false;
@@ -547,10 +533,11 @@ void vfs_user_build_filesystem_hook() {
         }
     }
 
-    file_size = gflashConfig.fileSize;
+    flashConfig_t* storage_cgf = i2c_cmds_get_storage_config();
+    file_size = storage_cgf->fileSize;
 
-    if (gflashConfig.fileVisible) {
-        vfs_create_file(gflashConfig.fileName, read_file_data_txt, 0, file_size);
+    if (storage_cgf->fileVisible) {
+        vfs_create_file(storage_cgf->fileName, read_file_data_txt, 0, file_size);
     }
 }
 
