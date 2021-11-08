@@ -52,6 +52,10 @@ static void i2c_write_comms_callback(uint8_t* pData, uint8_t size) {
     i2cCommand_t i2cResponse = {0};
     bool assert_interrupt = true;
 
+    if (size < 1) {
+        return;
+    }
+
     switch (pI2cCommand->cmdId) {
         case gReadRequest_c:
             i2cResponse.cmdId = gReadResponse_c;
@@ -191,16 +195,16 @@ static void i2c_read_comms_callback(uint8_t* pData, uint8_t size) {
 
     switch (pI2cCommand->cmdId) {
         case gWriteResponse_c:
-            switch (pI2cCommand->cmdData.writeRspCmd.propertyId) {
+        switch (pI2cCommand->cmdData.writeRspCmd.propertyId) {
                 case gPowerMode_c:
                     main_shutdown_state = MAIN_SHUTDOWN_REQUESTED;
                 break;
             }
         break;
     }
-    
+
     i2c_clearBuffer();
-    
+
     // Release COMBINED_SENSOR_INT
     gpio_disable_combined_int();
 }
@@ -240,7 +244,7 @@ static void i2c_write_flash_callback(uint8_t* pData, uint8_t size) {
     uint32_t data = (uint32_t) pI2cCommand->cmdData.write.data;
 
     i2c_clearBuffer();
-    
+
     switch (pI2cCommand->cmdId) {
         case gFlashDataWrite_c:
             /* Validate length field matches with I2C Write data */
