@@ -84,10 +84,28 @@ bool reset_button_pressed()
 
 bool board_bootloader_init()
 {
-    // Lock the bootloader flash, only protects until reset,
-    // so needs to be executed in the bootloader on every startup
-    uint8_t acl_region = 0;
-    NRF_ACL->ACL[acl_region].ADDR = DAPLINK_ROM_BL_START;
-    NRF_ACL->ACL[acl_region].SIZE = DAPLINK_ROM_BL_SIZE;
-    NRF_ACL->ACL[acl_region].PERM = ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos;
+    uint32_t pin_bootmode;
+    if (NRF_FICR->INFO.PART == 0x52833) {
+        // nRF52833
+        pin_bootmode  = NRF_GPIO_PIN_MAP(0, 10);
+     } else {
+        // nRF52820
+        pin_bootmode  = NRF_GPIO_PIN_MAP(0, 17);
+    }
+
+    NRF_GPIO_Type *reg  = GPIO_REG(pin_bootmode);
+    uint32_t idx        = GPIO_IDX(pin_bootmode);
+    gpio_cfg_input(reg, idx, NRF_GPIO_PIN_PULLUP);
+    uint32_t bootmode = gpio_read(reg, idx);
+    gpio_cfg(reg, idx, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_DISCONNECT,
+            NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
+
+    if (bootmode) {
+        // Lock the bootloader flash, only protects until reset,
+        // so needs to be executed in the bootloader on every startup
+        uint8_t acl_region = 0;
+        NRF_ACL->ACL[acl_region].ADDR = DAPLINK_ROM_BL_START;
+        NRF_ACL->ACL[acl_region].SIZE = DAPLINK_ROM_BL_SIZE;
+        NRF_ACL->ACL[acl_region].PERM = ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos;
+    }
 }
