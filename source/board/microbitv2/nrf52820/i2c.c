@@ -46,6 +46,10 @@ static ARM_DRIVER_I2C *I2Cdrv = &Driver_I2C0;
 static uint8_t g_slave_TX_buff[I2C_DATA_LENGTH] = { 0 };
 static uint8_t g_slave_RX_buff[I2C_DATA_LENGTH] = { 0 };
 
+static const uint8_t g_slave_busy_error_buff[] = {gErrorResponse_c, gErrorBusy_c};
+static uint8_t g_slave_TX_buff_ready = 0;
+static uint8_t g_slave_busy = 0;
+
 static i2cCallback_t pfWriteCommsCallback = NULL;
 static i2cCallback_t pfReadCommsCallback = NULL;
 static i2cCallback_t pfWriteFlashCallback = NULL;
@@ -127,22 +131,35 @@ static void i2c_signalEvent(uint32_t event) {
 
             // Ignore NOP commands and 0 length transmissions
             if ((data_count != 0) && (g_slave_RX_buff[0] != gNopCmd_c)) {
-                if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_0) {
-                    i2c_scheduleCallback(pfWriteCommsCallback, &g_slave_RX_buff[0], data_count);
-                } else if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_1) {
-                    i2c_scheduleCallback(pfWriteFlashCallback, &g_slave_RX_buff[0], data_count);
+                // Only process events if the busy error was not read
+                if ( !g_slave_busy) {
+                    if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_0) {
+                        i2c_scheduleCallback(pfWriteCommsCallback, &g_slave_RX_buff[0], data_count);
+                    } else if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_1) {
+                        i2c_scheduleCallback(pfWriteFlashCallback, &g_slave_RX_buff[0], data_count);
+                    }
+                } else {
+                    g_slave_busy = 0;
                 }
             }
+            // Buffer with response is not ready after an I2C Write inside the IRQ
+            // It will be ready when the task attends the I2C event
+            g_slave_TX_buff_ready = 0;
+
         } else if (prev_event & ARM_I2C_EVENT_SLAVE_TRANSMIT) {
             int32_t data_count = I2Cdrv->GetDataCount();
             debug_i2c_printf("[tx][%d] ", data_count);
             // for (int i = 0; i < 5; i++) debug_i2c_printf("%02x ", g_slave_TX_buff[i]);
             debug_i2c_data((uint8_t *)"\n", 1);
-
-            if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_0) {
-                i2c_scheduleCallback(pfReadCommsCallback, &g_slave_TX_buff[0], data_count);
-            } else if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_1) {
-                i2c_scheduleCallback(pfReadFlashCallback, &g_slave_TX_buff[0], data_count);
+            // Only process events if the busy error was not read
+            if ( !g_slave_busy) {
+                if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_0) {
+                    i2c_scheduleCallback(pfReadCommsCallback, &g_slave_TX_buff[0], data_count);
+                } else if (event & EXTENSION_I2C_EVENT_SLAVE_ADDR_1) {
+                    i2c_scheduleCallback(pfReadFlashCallback, &g_slave_TX_buff[0], data_count);
+                }
+            } else {
+                g_slave_busy = 0;
             }
         }
     }
@@ -160,7 +177,13 @@ static void i2c_signalEvent(uint32_t event) {
         // debug_i2c_printf("rx[%d]\n", ret);
     }
     if (event & ARM_I2C_EVENT_SLAVE_TRANSMIT) {
-        int32_t ret = I2Cdrv->SlaveTransmit(&g_slave_TX_buff[0], I2C_DATA_LENGTH);
+        int32_t ret = 0;
+        if (g_slave_TX_buff_ready) {
+            ret = I2Cdrv->SlaveTransmit(&g_slave_TX_buff[0], I2C_DATA_LENGTH);
+        } else {
+            ret = I2Cdrv->SlaveTransmit((uint8_t*)g_slave_busy_error_buff, sizeof(g_slave_busy_error_buff));
+            g_slave_busy = 1;
+        }
         i2c_wake_timeout = 4;   // 4 * 30ms tick = 120ms timeout
         // debug_i2c_printf("tx[%d]\n", ret);
     }
@@ -243,6 +266,7 @@ void i2c_fillBuffer(uint8_t* data, uint32_t position, uint32_t size)
     for (uint32_t i = 0; i < size; i++) { 
         g_slave_TX_buff[position + i] = data[i];
     }
+    g_slave_TX_buff_ready = 1;
     i2c_allow_sleep = false;
 }
 
