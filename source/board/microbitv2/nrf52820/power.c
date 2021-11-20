@@ -57,6 +57,9 @@ extern power_source_t power_source;
 uint8_t  power_gpiote_enabled;
 uint32_t power_gpiote_intenset;
 
+// Define one of these
+#define POWER_IRQ_USBDETECTED 1
+//#define POWER_IRQ_VBUS_ABSENT 1
 
 void power_init()
 {
@@ -69,13 +72,49 @@ void power_init()
     // Override hic_hal gpio_init() RESET_BUTTON_PULL (=NRF_GPIO_PIN_PULLUP)
     gpio_cfg_input(GPIO_REG(RESET_BUTTON), GPIO_IDX(RESET_BUTTON), NRF_GPIO_PIN_NOPULL);
     
-    // Configure VBUS_ABSENT (WAKE_ON_EDGE) pin to detect USB attach/detach */
+    // Configure VBUS_ABSENT (WAKE_ON_EDGE) pin as input */
     gpio_cfg_input(GPIO_REG(PIN_VBUS_ABSENT), GPIO_IDX(PIN_VBUS_ABSENT), NRF_GPIO_PIN_NOPULL);
+    
+#ifdef POWER_IRQ_VBUS_ABSENT
+    // Configure VBUS_ABSENT (WAKE_ON_EDGE) pin to detect USB attach/detach */
     power_gpio_set_sense_from_read(GPIO_REG(PIN_VBUS_ABSENT), GPIO_IDX(PIN_VBUS_ABSENT)); 
+#endif // POWER_IRQ_VBUS_ABSENT
 
     NRF_GPIOTE->EVENTS_PORT = 0;
     NRF_GPIOTE->INTENSET = power_gpiote_intenset | ( GPIOTE_INTENSET_PORT_Set << GPIOTE_INTENSET_PORT_Pos);
     NVIC_EnableIRQ(GPIOTE_IRQn);
+
+#ifdef POWER_IRQ_USBDETECTED
+    // Enable NRF_POWER interrupt for USB detected/removed
+    NRF_POWER->INTENCLR = NRF_POWER->INTENSET;
+    NRF_POWER->INTENSET = POWER_INTENSET_USBDETECTED_Msk | POWER_INTENSET_USBREMOVED_Msk;
+    NVIC_EnableIRQ(POWER_CLOCK_IRQn);
+#endif // POWER_IRQ_USBDETECTED
+}
+
+static void morse( int n, int t)
+{
+    uint32_t pin_led_hid;
+    if (NRF_FICR->INFO.PART == 0x52833) {
+        // nRF52833
+        pin_led_hid = NRF_GPIO_PIN_MAP(0, 15);
+    }
+    else {
+        pin_led_hid = NRF_GPIO_PIN_MAP(0, 14);
+    }
+
+    NRF_GPIO_Type *reg = GPIO_REG(pin_led_hid);
+    uint32_t idx = GPIO_IDX(pin_led_hid);
+
+    gpio_cfg_output(reg, idx);
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int cycles = 0; cycles < t * 100000; cycles++) gpio_write(reg, idx, 1);
+        for (int cycles = 0; cycles < t * 100000; cycles++) gpio_write(reg, idx, 0);
+    }
+
+    gpio_cfg(reg, idx, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_DISCONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
 }
 
 void power_down()
@@ -113,8 +152,10 @@ static void power_before(bool systemoff)
     power_gpiote_intenset = NRF_GPIOTE->INTENSET;
     NRF_GPIOTE->INTENCLR = NRF_GPIOTE->INTENSET;
 
+#ifdef POWER_IRQ_VBUS_ABSENT
     // Configure VBUS_ABSENT (WAKE_ON_EDGE) pin to detect USB attach */
     power_gpio_set_sense(GPIO_REG(PIN_VBUS_ABSENT), GPIO_IDX(PIN_VBUS_ABSENT), NRF_GPIO_PIN_SENSE_LOW);
+#endif // POWER_IRQ_VBUS_ABSENT
 
     // Enable IRQ from RESET_BUTTON 
     power_gpio_set_sense(GPIO_REG(RESET_BUTTON), GPIO_IDX(RESET_BUTTON), NRF_GPIO_PIN_SENSE_LOW);
@@ -122,18 +163,34 @@ static void power_before(bool systemoff)
     NRF_GPIOTE->EVENTS_PORT = 0;
     NRF_GPIOTE->INTENSET = power_gpiote_intenset | ( GPIOTE_INTENSET_PORT_Set << GPIOTE_INTENSET_PORT_Pos);
     NVIC_EnableIRQ(GPIOTE_IRQn);
+
+#ifdef POWER_IRQ_USBDETECTED
+    // Enable NRF_POWER interrupt for USB detected/removed
+    NRF_POWER->INTENCLR = NRF_POWER->INTENSET;
+    NRF_POWER->INTENSET = POWER_INTENSET_USBDETECTED_Msk;
+    NVIC_EnableIRQ(POWER_CLOCK_IRQn);
+#endif // POWER_IRQ_USBDETECTED
 }
 
 static void power_after()
 {
+#ifdef POWER_IRQ_USBDETECTED
+    // Enable NRF_POWER interrupt for USB detected/removed
+    NRF_POWER->INTENCLR = NRF_POWER->INTENSET;
+    NRF_POWER->INTENSET = POWER_INTENSET_USBDETECTED_Msk | POWER_INTENSET_USBREMOVED_Msk;
+    NVIC_EnableIRQ(POWER_CLOCK_IRQn);
+#endif // POWER_IRQ_USBDETECTED
+
     // Restore GPIOTE state
     if (!power_gpiote_enabled) {
         NVIC_DisableIRQ(GPIOTE_IRQn);
     }
     NRF_GPIOTE->INTENCLR = NRF_GPIOTE->INTENSET;
 
+#ifdef POWER_IRQ_VBUS_ABSENT
     // Configure VBUS_ABSENT (WAKE_ON_EDGE) pin to detect USB attach/detach */
     power_gpio_set_sense_from_read(GPIO_REG(PIN_VBUS_ABSENT), GPIO_IDX(PIN_VBUS_ABSENT));
+#endif // POWER_IRQ_VBUS_ABSENT
 
     // Disable RESET_BUTTON edge events
     power_gpio_set_sense(GPIO_REG(RESET_BUTTON), GPIO_IDX(RESET_BUTTON), NRF_GPIO_PIN_NOSENSE);
@@ -162,9 +219,12 @@ static void power_systemoff()
 
 static void power_wfi()
 {
+    //morse( 1, 40);
     power_before(false /*systemoff*/);
     __WFI();
+    //morse( 2, 40);
     power_after();
+    //morse( 5, 20);
 }
 
 
@@ -193,6 +253,7 @@ void GPIOTE_IRQHandler(void)
             wake_from_reset = 1;
         }
 
+#ifdef POWER_IRQ_VBUS_ABSENT
         reg = GPIO_REG(PIN_VBUS_ABSENT);
         idx = GPIO_IDX(PIN_VBUS_ABSENT);
         if (reg->LATCH & (1 << idx)) {
@@ -216,5 +277,28 @@ void GPIOTE_IRQHandler(void)
                 wake_from_usb = 1;
             }
         }
+#endif // POWER_IRQ_VBUS_ABSENT
     }
 }
+
+
+#ifdef POWER_IRQ_USBDETECTED
+void POWER_CLOCK_IRQHandler(void)
+{
+    if (NRF_POWER->EVENTS_USBDETECTED) {
+        NRF_POWER->EVENTS_USBDETECTED = 0;
+        power_source = pwr_mon_get_power_source();
+        wake_from_usb = 1;
+    }
+
+    if (NRF_POWER->EVENTS_USBREMOVED) {
+        NRF_POWER->EVENTS_USBREMOVED = 0;
+        power_source = pwr_mon_get_power_source();
+        /* Reset USB on cable detach (VBUS falling edge) */
+        USBD_Reset();
+        usbd_reset_core();
+        usb_pc_connected = false;
+        usb_state = USB_DISCONNECTED;
+    }
+}
+#endif // POWER_IRQ_USBDETECTED
