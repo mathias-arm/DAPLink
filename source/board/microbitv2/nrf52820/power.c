@@ -92,31 +92,6 @@ void power_init()
 #endif // POWER_IRQ_USBDETECTED
 }
 
-static void morse( int n, int t)
-{
-    uint32_t pin_led_hid;
-    if (NRF_FICR->INFO.PART == 0x52833) {
-        // nRF52833
-        pin_led_hid = NRF_GPIO_PIN_MAP(0, 15);
-    }
-    else {
-        pin_led_hid = NRF_GPIO_PIN_MAP(0, 14);
-    }
-
-    NRF_GPIO_Type *reg = GPIO_REG(pin_led_hid);
-    uint32_t idx = GPIO_IDX(pin_led_hid);
-
-    gpio_cfg_output(reg, idx);
-
-    for (int i = 0; i < n; i++)
-    {
-        for (int cycles = 0; cycles < t * 100000; cycles++) gpio_write(reg, idx, 1);
-        for (int cycles = 0; cycles < t * 100000; cycles++) gpio_write(reg, idx, 0);
-    }
-
-    gpio_cfg(reg, idx, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_DISCONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
-}
-
 void power_down()
 {
     power_systemoff();
@@ -219,12 +194,9 @@ static void power_systemoff()
 
 static void power_wfi()
 {
-    //morse( 1, 40);
     power_before(false /*systemoff*/);
     __WFI();
-    //morse( 2, 40);
     power_after();
-    //morse( 5, 20);
 }
 
 
