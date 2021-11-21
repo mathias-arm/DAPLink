@@ -91,31 +91,6 @@ bool reset_button_pressed()
     return btn_pressed;
 }
 
-static void morse( int n, int t)
-{
-    uint32_t pin_led_hid;
-    if (NRF_FICR->INFO.PART == 0x52833) {
-        // nRF52833
-        pin_led_hid = NRF_GPIO_PIN_MAP(0, 15);
-    }
-    else {
-        pin_led_hid = NRF_GPIO_PIN_MAP(0, 14);
-    }
-
-    NRF_GPIO_Type *reg = GPIO_REG(pin_led_hid);
-    uint32_t idx = GPIO_IDX(pin_led_hid);
-
-    gpio_cfg_output(reg, idx);
-
-    for (int i = 0; i < n; i++)
-    {
-        for (int cycles = 0; cycles < t * 100000; cycles++) gpio_write(reg, idx, 1);
-        for (int cycles = 0; cycles < t * 100000; cycles++) gpio_write(reg, idx, 0);
-    }
-
-    gpio_cfg(reg, idx, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_DISCONNECT, NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
-}
-
 bool board_bootloader_init()
 {
     if (NRF_FICR->INFO.PART == 0x52833) {
@@ -151,17 +126,11 @@ bool board_bootloader_init()
             NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
 
     if (bootmode) {
-        morse( 2, 20);
-    } else {
-        morse( 5, 20);
+        // Lock the bootloader flash, only protects until reset,
+        // so needs to be executed in the bootloader on every startup
+        uint8_t acl_region = 0;
+        NRF_ACL->ACL[acl_region].ADDR = DAPLINK_ROM_BL_START;
+        NRF_ACL->ACL[acl_region].SIZE = DAPLINK_ROM_BL_SIZE;
+        NRF_ACL->ACL[acl_region].PERM = ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos;
     }
-
-    // if (bootmode) {
-    //     // Lock the bootloader flash, only protects until reset,
-    //     // so needs to be executed in the bootloader on every startup
-    //     uint8_t acl_region = 0;
-    //     NRF_ACL->ACL[acl_region].ADDR = DAPLINK_ROM_BL_START;
-    //     NRF_ACL->ACL[acl_region].SIZE = DAPLINK_ROM_BL_SIZE;
-    //     NRF_ACL->ACL[acl_region].PERM = ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos;
-    // }
 }
