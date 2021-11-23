@@ -93,39 +93,37 @@ bool reset_button_pressed()
 
 bool board_bootloader_init()
 {
+    uint32_t apply_protection = 0;
+
     if (NRF_FICR->INFO.PART == 0x52833) {
         // nRF52833
-        // Configure the NFC pins as GPIO in the UICR if not done already
+        // Apply the flash protection if the NFC pins are not configured as GPIO
         volatile uint32_t* const nrf_uicr_nfcpins = (uint32_t *) NRF52833_UCIR_NFCPINS_ADDRESS;
         if ((*nrf_uicr_nfcpins & NRF52833_UICR_NFCPINS_PROTECT_Msk) ==
                 (NRF52833_UICR_NFCPINS_PROTECT_NFC << NRF52833_UICR_NFCPINS_PROTECT_Pos)) {
-            nrf_nvmc_mode_set(NRF_NVMC, NRF_NVMC_MODE_WRITE);
-            *nrf_uicr_nfcpins &= ~NRF52833_UICR_NFCPINS_PROTECT_Msk;
-            while (!nrf_nvmc_ready_check(NRF_NVMC));
-            nrf_nvmc_mode_set(NRF_NVMC, NRF_NVMC_MODE_READONLY);
-            // Changes only take effect after a system reset
-            // TODO: This does not seem to reset the system correctly, it hangs somewhere
-            NVIC_SystemReset();
+            apply_protection = 1;
         }
     }
 
-    uint32_t pin_bootmode;
-    if (NRF_FICR->INFO.PART == 0x52833) {
-        // nRF52833
-        pin_bootmode  = NRF_GPIO_PIN_MAP(0, 10);
-     } else {
-        // nRF52820
-        pin_bootmode  = NRF_GPIO_PIN_MAP(0, 17);
+    if (!apply_protection) {
+        uint32_t pin_bootmode;
+        if (NRF_FICR->INFO.PART == 0x52833) {
+            // nRF52833
+            pin_bootmode  = NRF_GPIO_PIN_MAP(0, 10);
+        } else {
+            // nRF52820
+            pin_bootmode  = NRF_GPIO_PIN_MAP(0, 17);
+        }
+
+        NRF_GPIO_Type *reg  = GPIO_REG(pin_bootmode);
+        uint32_t idx        = GPIO_IDX(pin_bootmode);
+        gpio_cfg_input(reg, idx, NRF_GPIO_PIN_PULLUP);
+        apply_protection = gpio_read(reg, idx);
+        gpio_cfg(reg, idx, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_DISCONNECT,
+                NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
     }
 
-    NRF_GPIO_Type *reg  = GPIO_REG(pin_bootmode);
-    uint32_t idx        = GPIO_IDX(pin_bootmode);
-    gpio_cfg_input(reg, idx, NRF_GPIO_PIN_PULLUP);
-    uint32_t bootmode = gpio_read(reg, idx);
-    gpio_cfg(reg, idx, NRF_GPIO_PIN_DIR_INPUT, NRF_GPIO_PIN_INPUT_DISCONNECT,
-            NRF_GPIO_PIN_NOPULL, NRF_GPIO_PIN_S0S1, NRF_GPIO_PIN_NOSENSE);
-
-    if (bootmode) {
+    if (apply_protection) {
         // Lock the bootloader flash, only protects until reset,
         // so needs to be executed in the bootloader on every startup
         uint8_t acl_region = 0;
