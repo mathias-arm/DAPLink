@@ -58,11 +58,21 @@ uint8_t  power_gpiote_enabled;
 uint32_t power_gpiote_intenset;
 
 // Define one of these
+// Using USBDETECTED for wake-up from SYSTEMOFF
+// results in different values in NRF_POWER->RESETREAS
+// for reset button and USB wake-ups
 #define POWER_IRQ_USBDETECTED 1
 //#define POWER_IRQ_VBUS_ABSENT 1
 
 void power_init()
 {
+    if (NRF_POWER->RESETREAS & POWER_RESETREAS_VBUS_Msk) {
+        wake_from_usb = 1;
+    }
+    if (NRF_POWER->RESETREAS & POWER_RESETREAS_OFF_Msk) {
+        wake_from_reset = 1;
+    }
+
     microbitv2_pins_init();
 
     // Store NRF_GPIOTE state

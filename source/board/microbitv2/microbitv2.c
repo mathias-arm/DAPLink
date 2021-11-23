@@ -202,14 +202,6 @@ static inline uint8_t get_led_gamma(uint8_t brightness) {
 // Called in main_task() to init before USB and files are configured
 static void prerun_board_config(void)
 {
-#if defined(INTERFACE_NRF52820)
-    if (NRF_POWER->RESETREAS & POWER_RESETREAS_VBUS_Msk) {
-        wake_from_usb = true;
-    }
-    if (NRF_POWER->RESETREAS & POWER_RESETREAS_OFF_Msk) {
-        wake_from_reset = true;
-    }
-#endif
     // HID_LED_DEF is on so the resting state of the orange LED after flashing is on
     // but turn it off here so it's initially off, then stays off when on battery,
     // and comes on only when USB enumerates 
@@ -252,7 +244,7 @@ void handle_reset_button()
     {
         // handle reset button without eventing
         if (!reset_pressed && (gpio_get_reset_btn_fwrd() || wake_from_reset)) {
-             // Reset button pressed
+            // Reset button pressed
             target_set_state(RESET_PROGRAM);
             i2c_clearBuffers();
             reset_pressed = 1;
