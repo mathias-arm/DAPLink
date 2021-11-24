@@ -52,7 +52,7 @@ static i2cCallback_t pfWriteFlashCallback = NULL;
 static i2cCallback_t pfReadFlashCallback = NULL;
 
 extern uint8_t i2c_wake_timeout;
-static bool i2c_allow_sleep;
+static bool i2c_allow_sleep = true;
 
 static void i2c_clearTxBuffer(void);
 
