@@ -36,7 +36,6 @@
 #define NRF52833_UCIR_NFCPINS_ADDRESS           (NRF_UICR_BASE + NRF52833_UICR_NFCPINS_OFFSET)
 #define NRF52833_UICR_NFCPINS_PROTECT_Pos       (0UL) /*!< Position of PROTECT field. */
 #define NRF52833_UICR_NFCPINS_PROTECT_Msk       (0x1UL << NRF52833_UICR_NFCPINS_PROTECT_Pos) /*!< Bit mask of PROTECT field. */
-#define NRF52833_UICR_NFCPINS_PROTECT_Disabled  (0UL) /*!< Operation as GPIO pins. Same protection as normal GPIO pins. */
 #define NRF52833_UICR_NFCPINS_PROTECT_NFC       (1UL) /*!< Operation as NFC antenna pins. Configures the protection for NFC operation. */
 
 // Warning - changing the interface start will break backwards compatibility
