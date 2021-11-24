@@ -256,6 +256,8 @@ void i2c_clearBuffers(void)
 {
     memset(&g_slave_TX_buff, 0, sizeof(g_slave_TX_buff));
     memset(&g_slave_RX_buff, 0, sizeof(g_slave_RX_buff));
+    address_match = 0;
+    i2c_allow_sleep = true;
 }
 
 void i2c_clearTxBuffer(void)
@@ -272,6 +274,7 @@ void i2c_fillBuffer (uint8_t* data, uint32_t position, uint32_t size) {
             g_slave_TX_buff[position + i] = data[i];
     }
     g_slave_TX_buff_ready = 1;
+    i2c_allow_sleep = false;
 }
 
 bool i2c_isBusy()
